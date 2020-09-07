@@ -1,7 +1,10 @@
 # Comparing Ruby environments on Vercel and Render.com
 
 _9/1/20_
+
 _9/2/20_
+
+_9/7/20_
 
 This README is for an example project that compares Ruby environments on [Vercel](https://vercel.com/) and [Render.com](https://render.com/). The goal is to compare the capability to deploy Ruby functions as API endpoints on the Vercel and Render.com platforms.
 
@@ -9,11 +12,25 @@ This project is a work in progress and currently details some unresolved issues 
 
 ## Questions for Vercel Support
 
-Should the Gemfile be placed in the project root directory or in the  `api` directory?
+Q: Should the Gemfile be placed in the project root directory or in the  `api` directory?
 
-What is the correct “Build Command” and “Output Directory” settings to run  `bundle update` (in order to install a gem from GitHub) and serve Ruby functions from an `api` directory?
+A: “The Gemfile should be placed in the ‘api/‘ folder.”
 
-When “Build Command” and “Output Directory” are not set, how are Ruby gems installed? Does `bundle install` run by default for a Ruby function? Why is there no logging of bundler output in the build logs during a default deploy?
+Q: What is the correct “Build Command” and “Output Directory” settings to run  `bundle update` (in order to install a gem from GitHub) and serve Ruby functions from an `api` directory?
+
+A: "Those commands are related to your frontend framework. Vercel is a frontend-first platform. Serverless Functions are helpers on our solution. Deploying APIs without a frontend is considered an anti-pattern in our platform. There are other providers more suited for APIs, such as Heroku."
+
+Q: When “Build Command” and “Output Directory” are not set, how are Ruby gems installed? Does `bundle install` run by default for a Ruby function? Why is there no logging of bundler output in the build logs during a default deploy?
+
+A: "It should have called the command in your API folder. It seems we may have a bug in our platform.  If you add a 'vercel.json' to the root of your project it will install the dependencies:"
+
+```
+{
+  "builds": [{"src": "api/*.rb", "use": "@vercel/ruby"}]
+}
+```
+
+Note: After adding `vercel.json` file and redeploying, I get the same error. See the section "Deploying on Vercel with a vercel.json file."
 
 ## Example project
 
@@ -567,6 +584,73 @@ I’ve set the “Build Command” to `bundle update`. I want the project root t
 
 My question:
 - What is the correct “Build Command” and “Output Directory” to run  `bundle update` (in order to install a gem from GitHub) and serve Ruby functions from an  `api` directory?
+
+## Deploying on Vercel with a vercel.json file
+
+Paulo De Mitri of Vercel Support says:
+“I have located a hint of the bug. It is related to our Zero Config behavior. If you add a 'vercel.json' to the root of your project it will install the dependencies."
+
+```ruby
+{
+  "builds": [{"src": "api/*.rb", "use": "@vercel/ruby"}]
+}
+```
+
+He also says, “The Gemfile should be placed in the ‘api/‘ folder.”
+
+Added the `vercel.json` file as suggested. Pushed to GitHub for automatic redeploy. Build logs show:
+
+```bash
+12:27:33.155  	Cloning github.com/DanielKehoe/ruby-trial (Branch: master, Commit: 88e8d3c)
+12:27:33.828  	Cloning completed in 673ms
+12:27:33.829  	Analyzing source code...
+12:27:33.830  	Warning: Due to `builds` existing in your configuration file, the Build and Development Settings defined in your Project Settings will not apply. Learn More: https://vercel.link/unused-build-settings
+12:27:34.364  	Installing build runtime...
+12:27:35.942  	Build runtime installed: 1577.756ms
+12:27:36.349  	Looking up build cache...
+12:27:36.385  	Build cache not found
+12:28:15.486  	Uploading build outputs...
+12:28:23.556  	Done with "api/try-vercel.rb"
+```
+
+Tried [https://ruby-trial.vercel.app/api/try-vercel.rb](https://ruby-trial.vercel.app/api/try-vercel.rb)
+Got error:
+
+```bash
+502: BAD_GATEWAY
+Code: NO_RESPONSE_FROM_FUNCTION
+ID: sin1::dcqm4-1599453217668-373776e676e5
+```
+
+The function log shows an error:
+
+```bash
+[GET] /api/try-vercel.rb
+12:33:36:85
+Critical exception from handler{
+  "errorMessage": "cannot load such file -- fauna",
+  "errorType": "Function<LoadError>",
+  "stackTrace": [
+    "/var/lang/lib/ruby/site_ruby/2.7.0/rubygems/core_ext/kernel_require.rb:92:in `require'",
+    "/var/lang/lib/ruby/site_ruby/2.7.0/rubygems/core_ext/kernel_require.rb:92:in `require'",
+    "/var/task/api/try-vercel.rb:3:in `<top (required)>'",
+    "/var/task/now__handler__ruby.rb:29:in `require_relative'",
+    "/var/task/now__handler__ruby.rb:29:in `webrick_handler'",
+    "/var/task/now__handler__ruby.rb:96:in `now__handler'"
+  ]
+}
+Unknown application error occurred
+Function<LoadError>
+```
+
+Looked at [https://vercel.link/unused-build-settings](https://vercel.link/unused-build-settings). It says:
+“A Project has several settings that can be found in the dashboard. One of those sections is called "Build & Development Settings" and is used to change the way a Project is built. However, the Build & Development Settings are only applied to zero-configuration Deployments. If a Deployment defines the builds configuration property, the Build & Development Settings are ignored.”
+
+Checked "Build & Development Settings" and toggled off “Override” and redeployed. Same error.
+
+Tried deleting the project and then deploy again. Same error.
+
+Will contact Vercel support for help.
 
 ## Deploying on Render.com
 
