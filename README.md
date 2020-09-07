@@ -30,7 +30,7 @@ A: "It should have called the command in your API folder. It seems we may have a
 }
 ```
 
-Note: After adding `vercel.json` file and redeploying, I get the same error. See the section "Deploying on Vercel with a vercel.json file."
+Note: After adding `vercel.json` file and redeploying, I get the same error. See the section [Deploying on Vercel with a vercel.json file](https://github.com/DanielKehoe/ruby-trial#deploying-on-vercel-with-a-verceljson-file).
 
 ## Example project
 
